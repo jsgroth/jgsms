@@ -9,8 +9,9 @@ use jgenesis_native_driver::input::{
 };
 use jgenesis_native_driver::{
     AudioError, Native32XEmulator, NativeEmulatorError, NativeEmulatorResult,
-    NativeGameBoyEmulator, NativeGenesisEmulator, NativeNesEmulator, NativeSegaCdEmulator,
-    NativeSmsGgEmulator, NativeSnesEmulator, NativeTickEffect, SaveStateMetadata,
+    NativeGameBoyEmulator, NativeGbaEmulator, NativeGenesisEmulator, NativeNesEmulator,
+    NativeSegaCdEmulator, NativeSmsGgEmulator, NativeSnesEmulator, NativeTickEffect,
+    SaveStateMetadata,
 };
 use sdl2::EventPump;
 use sdl2::event::Event;
@@ -34,7 +35,8 @@ pub enum EmuThreadStatus {
     RunningNes = 5,
     RunningSnes = 6,
     RunningGameBoy = 7,
-    WaitingForFirstCommand = 8,
+    RunningGba = 8,
+    WaitingForFirstCommand = 9,
 }
 
 impl EmuThreadStatus {
@@ -48,7 +50,8 @@ impl EmuThreadStatus {
             5 => Self::RunningNes,
             6 => Self::RunningSnes,
             7 => Self::RunningGameBoy,
-            8 => Self::WaitingForFirstCommand,
+            8 => Self::RunningGba,
+            9 => Self::WaitingForFirstCommand,
             _ => panic!("invalid status discriminant: {discriminant}"),
         }
     }
@@ -63,6 +66,7 @@ impl EmuThreadStatus {
                 | Self::RunningNes
                 | Self::RunningSnes
                 | Self::RunningGameBoy
+                | Self::RunningGba
         )
     }
 }
@@ -77,6 +81,7 @@ impl Console {
             Self::Nes => EmuThreadStatus::RunningNes,
             Self::Snes => EmuThreadStatus::RunningSnes,
             Self::GameBoy | Self::GameBoyColor => EmuThreadStatus::RunningGameBoy,
+            Self::GameBoyAdvance => EmuThreadStatus::RunningGba,
         }
     }
 }
@@ -262,6 +267,7 @@ enum GenericEmulator {
     Nes(NativeNesEmulator),
     Snes(NativeSnesEmulator),
     GameBoy(NativeGameBoyEmulator),
+    GameBoyAdvance(NativeGbaEmulator),
 }
 
 macro_rules! match_each_emulator_variant {
@@ -274,6 +280,7 @@ macro_rules! match_each_emulator_variant {
             GenericEmulator::Nes($emulator) => $expr,
             GenericEmulator::Snes($emulator) => $expr,
             GenericEmulator::GameBoy($emulator) => $expr,
+            GenericEmulator::GameBoyAdvance($emulator) => $expr,
         }
     };
 }
@@ -304,6 +311,9 @@ impl GenericEmulator {
             Console::GameBoy | Console::GameBoyColor => {
                 Self::GameBoy(jgenesis_native_driver::create_gb(config.gb_config(path))?)
             }
+            Console::GameBoyAdvance => {
+                Self::GameBoyAdvance(jgenesis_native_driver::create_gba(config.gba_config(path))?)
+            }
         };
 
         Ok(emulator)
@@ -318,6 +328,7 @@ impl GenericEmulator {
             Self::Nes(emulator) => emulator.reload_nes_config(config.nes_config(path)),
             Self::Snes(emulator) => emulator.reload_snes_config(config.snes_config(path)),
             Self::GameBoy(emulator) => emulator.reload_gb_config(config.gb_config(path)),
+            Self::GameBoyAdvance(emulator) => emulator.reload_gba_config(config.gba_config(path)),
         }
     }
 
