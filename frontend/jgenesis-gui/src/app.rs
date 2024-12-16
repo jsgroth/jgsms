@@ -18,9 +18,9 @@ use crate::emuthread::{EmuThreadCommand, EmuThreadHandle, EmuThreadStatus};
 use eframe::Frame;
 use egui::panel::TopBottomSide;
 use egui::{
-    Align, Button, CentralPanel, Color32, Context, Grid, Key, KeyboardShortcut, Layout, Modifiers,
-    Response, TextEdit, ThemePreference, TopBottomPanel, Ui, Vec2, ViewportCommand, Widget, Window,
-    menu,
+    Align, Button, CentralPanel, Color32, ComboBox, Context, Grid, Key, KeyboardShortcut, Layout,
+    Modifiers, PopupCloseBehavior, Response, TextEdit, TextWrapMode, ThemePreference,
+    TopBottomPanel, Ui, Vec2, ViewportCommand, Widget, Window, menu,
 };
 use egui_extras::{Column, TableBuilder};
 use jgenesis_native_config::{AppConfig, EguiTheme, ListFilters, RecentOpen};
@@ -72,7 +72,7 @@ impl ListFiltersExt for ListFilters {
             self.nes.then_some(Console::Nes),
             self.snes.then_some(Console::Snes),
             self.game_boy.then_some(Console::GameBoy),
-            self.game_boy.then_some(Console::GameBoyColor),
+            self.game_boy_color.then_some(Console::GameBoyColor),
             self.game_boy_advance.then_some(Console::GameBoyAdvance),
         ]
         .into_iter()
@@ -976,7 +976,7 @@ impl App {
         ui.horizontal(|ui| {
             let textedit = TextEdit::singleline(&mut self.state.title_match)
                 .hint_text("Filter by name")
-                .desired_width(260.0);
+                .desired_width(300.0);
             if ui.add(textedit).changed() {
                 self.state.title_match_lowercase = Rc::from(self.state.title_match.to_lowercase());
                 self.refresh_filtered_rom_list();
@@ -992,15 +992,23 @@ impl App {
 
             let prev_list_filters = self.config.list_filters.clone();
 
-            ui.checkbox(&mut self.config.list_filters.master_system, "SMS");
-            ui.checkbox(&mut self.config.list_filters.game_gear, "GG");
-            ui.checkbox(&mut self.config.list_filters.genesis, "GEN");
-            ui.checkbox(&mut self.config.list_filters.sega_cd, "SCD");
-            ui.checkbox(&mut self.config.list_filters.sega_32x, "32X");
-            ui.checkbox(&mut self.config.list_filters.nes, "NES");
-            ui.checkbox(&mut self.config.list_filters.snes, "SNES");
-            ui.checkbox(&mut self.config.list_filters.game_boy, "GB");
-            ui.checkbox(&mut self.config.list_filters.game_boy_advance, "GBA");
+            ComboBox::new("list_filters_combobox", "")
+                .selected_text("Console filters...")
+                .close_behavior(PopupCloseBehavior::CloseOnClickOutside)
+                .wrap_mode(TextWrapMode::Extend)
+                .height(600.0)
+                .show_ui(ui, |ui| {
+                    ui.checkbox(&mut self.config.list_filters.master_system, "Sega Master System");
+                    ui.checkbox(&mut self.config.list_filters.game_gear, "Game Gear");
+                    ui.checkbox(&mut self.config.list_filters.genesis, "Genesis");
+                    ui.checkbox(&mut self.config.list_filters.sega_cd, "Sega CD");
+                    ui.checkbox(&mut self.config.list_filters.sega_32x, "Sega 32X");
+                    ui.checkbox(&mut self.config.list_filters.nes, "NES");
+                    ui.checkbox(&mut self.config.list_filters.snes, "SNES");
+                    ui.checkbox(&mut self.config.list_filters.game_boy, "Game Boy");
+                    ui.checkbox(&mut self.config.list_filters.game_boy_color, "Game Boy Color");
+                    ui.checkbox(&mut self.config.list_filters.game_boy_advance, "Game Boy Advance");
+                });
 
             if prev_list_filters != self.config.list_filters {
                 self.refresh_filtered_rom_list();

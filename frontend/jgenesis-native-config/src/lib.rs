@@ -42,6 +42,8 @@ pub struct ListFilters {
     #[serde(default = "true_fn")]
     pub game_boy: bool,
     #[serde(default = "true_fn")]
+    pub game_boy_color: bool,
+    #[serde(default = "true_fn")]
     pub game_boy_advance: bool,
 }
 
